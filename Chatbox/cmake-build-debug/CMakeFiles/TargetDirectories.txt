@@ -1,0 +1,3 @@
+/home/viking/Programing-stuff/cppProjects/Chatbox/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/viking/Programing-stuff/cppProjects/Chatbox/cmake-build-debug/CMakeFiles/Chatbox.dir
+/home/viking/Programing-stuff/cppProjects/Chatbox/cmake-build-debug/CMakeFiles/edit_cache.dir
