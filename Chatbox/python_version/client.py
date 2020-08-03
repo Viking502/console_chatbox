@@ -12,8 +12,10 @@ class Client:
         self.is_running = False
 
     def print_msg(self, msg):
-        print('\033[1;33m', self.ip, ':', self.port, '\033[0m', sep='')
+        print('\033[1;33m', end='')
+        print(self.ip, ':', self.port, ': ', sep='')
         print(msg)
+        print('\033[0m')
 
     def read_handler(self):
         while self.is_running:
@@ -26,8 +28,7 @@ class Client:
 
     def write_handler(self):
         while self.is_running:
-            self.print_msg('')
-            send_buff = input('> ')
+            send_buff = input()
             if send_buff == 'exit':
                 self.is_running = False
             self.sock.send(bytes(send_buff, self.encoding))
@@ -51,6 +52,6 @@ class Client:
 
 
 if __name__ == '__main__':
-    config = ('127.0.0.1', 1111)
+    config = ('127.0.0.1', 1234)
     client = Client(config)
     client.run()
