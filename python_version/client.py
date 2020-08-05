@@ -1,5 +1,6 @@
 import socket
 import threading
+from json import loads
 
 
 class Client:
@@ -11,19 +12,15 @@ class Client:
         self.encoding = 'utf-8'
         self.is_running = False
 
-    def print_msg(self, msg):
-        print('\033[1;33m', end='')
-        print(self.ip, ':', self.port, ': ', sep='')
-        print(msg)
-        print('\033[0m')
+    @staticmethod
+    def print_msg(data: dict):
+        print(f'\033[1;33m{data["auth"]} - {data["time"]}\n{data["msg"]}\033[0m')
 
     def read_handler(self):
-        while self.is_running:
+        while True:
             read_buff = self.sock.recv(1024)
             if read_buff:
-                read_buff = read_buff.decode(self.encoding)
-                if read_buff == 'exit':
-                    self.is_running = False
+                read_buff = loads(read_buff.decode(self.encoding))
                 self.print_msg(read_buff)
 
     def write_handler(self):
@@ -39,19 +36,17 @@ class Client:
             sock.connect((self.ip, self.port))
             print('connected with server')
 
-            reader = threading.Thread(target=self.read_handler)
+            reader = threading.Thread(target=self.read_handler, daemon=True)
             reader.start()
 
-            writer = threading.Thread(target=self.write_handler)
-            writer.start()
-
-            reader.join()
-            writer.join()
+            # writer = threading.Thread(target=self.write_handler, daemon=True)
+            # writer.start()
+            self.write_handler()
 
         print('connection closed')
 
 
 if __name__ == '__main__':
-    config = ('127.0.0.1', 1234)
+    config = ('0.0.0.0', 1111)
     client = Client(config)
     client.run()
