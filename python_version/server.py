@@ -1,5 +1,6 @@
 import socket
 import threading
+from datetime import datetime
 
 
 class Server:
@@ -8,34 +9,34 @@ class Server:
         self.ip, self.port = config
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.bind(config)
-        self.sock.listen(1)
+        self.sock.listen(12)
 
-    def print_msg(self, msg):
-        print('\033[1;33m', end='')
-        print(self.ip, ':', self.port, ': ', sep='')
-        print(msg)
-        print('\033[0m')
+        self.hosts = []
 
-    def read_handler(self, conn):
+    def print_msg(self, addr, msg):
+        print(f'\033[1;33m{addr[0]}:{addr[1]}: {datetime.now().strftime("%H:%M:%S %d-%m-%y")}\n{msg}\033[0m')
+
+    def read_handler(self, conn, addr):
         while True:
             buff = conn.recv(1024)
             if buff:
-                self.print_msg(buff.decode('utf-8'))
+                self.print_msg(addr, buff.decode("utf-8"))
+                for host in self.hosts:
+                    if host['conn'] != conn:
+                        host['conn'].send(buff)
 
     def run(self):
-        conn, host_addr = self.sock.accept()
-        print("[", host_addr[0], ":", host_addr[1], '] connected', sep='')
-
-        reader = threading.Thread(target=self.read_handler, args=(conn,), daemon=True)
-        reader.start()
-
         while True:
-            send_buff = bytes(input(''), 'utf8')
-            conn.send(send_buff)
+            conn, host_addr = self.sock.accept()
+            self.hosts.append({'addr': host_addr, 'conn': conn})
+            print(f'({host_addr[0]}:{host_addr[1]}) has connected')
+
+            reader = threading.Thread(target=self.read_handler, args=(conn, host_addr), daemon=True)
+            reader.start()
 
 
 if __name__ == '__main__':
 
-    config = ('127.0.0.1', 1234)
+    config = ('0.0.0.0', 1111)
     server = Server(config)
     server.run()
