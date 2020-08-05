@@ -3,6 +3,7 @@ from PySide2.QtCore import Qt, Slot, Signal
 import sys
 import threading
 import socket
+from json import loads
 
 
 class ChatWidget(QtW.QWidget):
@@ -50,11 +51,11 @@ class ChatWidget(QtW.QWidget):
         msg = self.send_box.toPlainText()
         self.send_box.clear()
         self.sock.send(bytes(msg, self.encoding))
-        self.update_messages({'author': 'you', 'msg': msg})
+        # self.update_messages({'author': 'you', 'msg': msg})
 
     @Slot()
     def update_messages(self, new_msg: dict):
-        message = QtW.QLabel(f'{new_msg["author"]}:\n{new_msg["msg"]}')
+        message = QtW.QLabel(f'{new_msg["author"]} - {new_msg["timestamp"]}\n{new_msg["message"]}')
         message.setAlignment(Qt.AlignTop)
         message.setStyleSheet("QLabel { border: 2px solid rgb(200, 200, 200)}")
         self.messages_box.addWidget(message)
@@ -64,16 +65,18 @@ class ChatWidget(QtW.QWidget):
         while True:
             read_buff = self.sock.recv(1024)
             if read_buff:
-                read_buff = read_buff.decode(self.encoding)
-                # print(read_buff)
-                self.msg_signal.emit({'author': self.ip, 'msg': read_buff})
+                read_buff = loads(read_buff.decode(self.encoding))
+                print(read_buff)
+                self.msg_signal.emit(
+                    {'author': read_buff['auth'], 'message': read_buff['msg'], 'timestamp': read_buff['time']}
+                )
 
 
 if __name__ == '__main__':
     app = QtW.QApplication(sys.argv)
 
     # set ip and port of server
-    config = ('10.0.0.72', 1112)
+    config = ('0.0.0.0', 1111)
 
     widget = ChatWidget(config)
     widget.resize(1200, 900)

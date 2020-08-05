@@ -1,5 +1,7 @@
 import socket
 import threading
+from datetime import datetime
+import json
 
 
 class Server:
@@ -8,34 +10,36 @@ class Server:
         self.ip, self.port = config
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.bind(config)
-        self.sock.listen(1)
+        self.sock.listen(12)
 
-    def print_msg(self, msg):
-        print('\033[1;33m', end='')
-        print(self.ip, ':', self.port, ': ', sep='')
-        print(msg)
-        print('\033[0m')
+        self.hosts = []
 
-    def read_handler(self, conn):
+    @staticmethod
+    def print_msg(message):
+        print(f'\033[1;33m{message["auth"]}: {message["time"]}\n{message["msg"]}\033[0m')
+
+    def read_handler(self, conn, addr):
         while True:
             buff = conn.recv(1024)
             if buff:
-                self.print_msg(buff.decode('utf-8'))
+                jsoned_msg = json.dumps({'auth': addr, 'msg': buff.decode('utf-8'), 'time': datetime.now().strftime("%H:%M:%S %d-%m-%y")})
+                self.print_msg(json.loads(jsoned_msg))
+                for host in self.hosts:
+                    host['conn'].send(bytes(jsoned_msg, 'utf-8'))
 
     def run(self):
-        conn, host_addr = self.sock.accept()
-        print("[", host_addr[0], ":", host_addr[1], '] connected', sep='')
-
-        reader = threading.Thread(target=self.read_handler, args=(conn,), daemon=True)
-        reader.start()
-
         while True:
-            send_buff = bytes(input(''), 'utf8')
-            conn.send(send_buff)
+            conn, host_addr = self.sock.accept()
+            host_addr = f'{host_addr[0]}:{host_addr[1]}'
+            self.hosts.append({'addr': host_addr, 'conn': conn})
+            print(f'({host_addr}) has connected')
+
+            reader = threading.Thread(target=self.read_handler, args=(conn, host_addr), daemon=True)
+            reader.start()
 
 
 if __name__ == '__main__':
 
-    config = ('127.0.0.1', 1234)
+    config = ('0.0.0.0', 1111)
     server = Server(config)
     server.run()
