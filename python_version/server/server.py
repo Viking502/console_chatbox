@@ -14,6 +14,12 @@ class Server:
 
         self.hosts = []
 
+    def remove_host(self, ip_addr):
+        for idx, host in enumerate(self.hosts):
+            if host['addr'] == ip_addr:
+                del self.hosts[idx]
+                break
+
     @staticmethod
     def print_msg(message):
         print(f'\033[1;33m{message["auth"]}: {message["time"]}\n{message["msg"]}\033[0m')
@@ -22,10 +28,18 @@ class Server:
         while True:
             buff = conn.recv(1024)
             if buff:
-                jsoned_msg = json.dumps({'auth': addr, 'msg': buff.decode('utf-8'), 'time': datetime.now().strftime("%H:%M:%S %d-%m-%y")})
-                self.print_msg(json.loads(jsoned_msg))
+                if buff.decode('utf-8') == '\\exit':
+                    self.remove_host(addr)
+                    print(f'({addr}) has disconnected')
+                    break
+                encoded_msg = bytes(json.dumps(
+                    {'auth': addr,
+                     'msg': buff.decode('utf-8'),
+                     'time': datetime.now().strftime("%H:%M:%S %d-%m-%y")}
+                ), 'utf-8')
+                self.print_msg(json.loads(encoded_msg.decode('utf-8')))
                 for host in self.hosts:
-                    host['conn'].send(bytes(jsoned_msg, 'utf-8'))
+                    host['conn'].send(encoded_msg)
 
     def run(self):
         while True:
