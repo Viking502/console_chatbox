@@ -26,7 +26,7 @@ class Client:
     def write_handler(self):
         while self.is_running:
             send_buff = input()
-            if send_buff == 'exit':
+            if send_buff == '\\exit':
                 self.is_running = False
             self.sock.send(bytes(send_buff, self.encoding))
 

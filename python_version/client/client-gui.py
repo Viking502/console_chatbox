@@ -51,7 +51,10 @@ class ChatWidget(QtW.QWidget):
         msg = self.send_box.toPlainText()
         self.send_box.clear()
         self.sock.send(bytes(msg, self.encoding))
-        # self.update_messages({'author': 'you', 'msg': msg})
+        if msg == '\\exit':
+            self.update_messages(
+                {'author': '', 'message': 'Disconnected', 'timestamp': ''}
+            )
 
     @Slot()
     def update_messages(self, new_msg: dict):
@@ -71,6 +74,10 @@ class ChatWidget(QtW.QWidget):
                     {'author': read_buff['auth'], 'message': read_buff['msg'], 'timestamp': read_buff['time']}
                 )
 
+    def send_disconnect_msg(self) -> int:
+        self.sock.send(bytes('\\exit', self.encoding))
+        return 0
+
 
 if __name__ == '__main__':
     app = QtW.QApplication(sys.argv)
@@ -84,4 +91,4 @@ if __name__ == '__main__':
 
     widget.msg_signal.connect(widget.update_messages)
 
-    sys.exit(app.exec_())
+    sys.exit([app.exec_(), widget.send_disconnect_msg()])
