@@ -5,7 +5,7 @@ from json import loads
 
 class Client:
 
-    def __init__(self, config):
+    def __init__(self, config: dict):
         self.ip, self.port = config
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 

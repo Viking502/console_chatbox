@@ -10,7 +10,7 @@ class ChatWidget(QtW.QWidget):
 
     msg_signal = Signal(dict)
 
-    def __init__(self, config):
+    def __init__(self, config: dict):
         QtW.QWidget.__init__(self)
         self.layout = QtW.QGridLayout()
 
@@ -87,8 +87,7 @@ if __name__ == '__main__':
 
     widget = ChatWidget(config)
     widget.resize(1200, 900)
-    widget.show()
-
     widget.msg_signal.connect(widget.update_messages)
+    widget.show()
 
     sys.exit([app.exec_(), widget.send_disconnect_msg()])
