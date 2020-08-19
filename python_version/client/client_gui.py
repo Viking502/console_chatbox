@@ -2,8 +2,7 @@ import PySide2.QtWidgets as QtW
 from PySide2.QtCore import Qt, Slot, Signal
 import sys
 import threading
-import socket
-from json import loads
+from client_core import ClientCore
 
 
 class ChatWidget(QtW.QWidget):
@@ -12,6 +11,8 @@ class ChatWidget(QtW.QWidget):
 
     def __init__(self, config: dict):
         QtW.QWidget.__init__(self)
+
+        # initialize gui
         self.layout = QtW.QGridLayout()
 
         self.scroll = QtW.QScrollArea()
@@ -36,22 +37,19 @@ class ChatWidget(QtW.QWidget):
 
         self.setLayout(self.layout)
 
-        self.ip, self.port = config
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        self.encoding = 'utf-8'
-        self.sock.connect((self.ip, self.port))
+        # initialize backend
+        self.core = ClientCore(config)
+        self.core.connect()
 
         reader = threading.Thread(target=self.read_handler, daemon=True)
         reader.start()
-
         self.send_button.clicked.connect(self.send_msg)
 
     def send_msg(self):
         msg = self.send_box.toPlainText()
         self.send_box.clear()
-        self.sock.send(bytes(msg, self.encoding))
-        if msg == '\\exit':
+        code = self.core.write(msg)
+        if code == '\\exit':
             self.update_messages(
                 {'author': '', 'message': 'Disconnected', 'timestamp': ''}
             )
@@ -66,16 +64,15 @@ class ChatWidget(QtW.QWidget):
 
     def read_handler(self):
         while True:
-            read_buff = self.sock.recv(1024)
+            read_buff = self.core.read()
             if read_buff:
-                read_buff = loads(read_buff.decode(self.encoding))
                 print(read_buff)
                 self.msg_signal.emit(
                     {'author': read_buff['auth'], 'message': read_buff['msg'], 'timestamp': read_buff['time']}
                 )
 
     def send_disconnect_msg(self) -> int:
-        self.sock.send(bytes('\\exit', self.encoding))
+        self.core.write('\\exit')
         return 0
 
 
