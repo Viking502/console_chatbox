@@ -2,6 +2,7 @@ import socket
 import threading
 from datetime import datetime
 from python_version.parser.parser import ParseError, Parser
+# from python_version.server.accounts import Accounts
 
 
 class Server:
@@ -14,6 +15,8 @@ class Server:
         self.sock.listen(12)
         self.hosts = []
         self.parser = Parser(self.encoding)
+        # self.accounts = Accounts('users.db')
+        # self.accounts.create_tables()
 
     def remove_host(self, ip_addr: str):
         for idx, host in enumerate(self.hosts):
@@ -48,6 +51,16 @@ class Server:
                 for host in self.hosts:
                     host['conn'].send(encoded_msg)
 
+    def log_user(self):
+        pass
+
+    def register_user(self):
+        pass
+
+    def handle_connection(self, conn, host_addr):
+
+        self.read_handler(conn, host_addr)
+
     def run(self):
         while True:
             conn, host_addr = self.sock.accept()
@@ -55,7 +68,7 @@ class Server:
             self.hosts.append({'conn': conn, 'addr': host_addr})
             print(f'({host_addr}) has connected')
 
-            reader = threading.Thread(target=self.read_handler, args=(conn, host_addr), daemon=True)
+            reader = threading.Thread(target=self.handle_connection, args=(conn, host_addr), daemon=True)
             reader.start()
 
 
