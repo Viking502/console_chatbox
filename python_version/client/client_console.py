@@ -1,5 +1,5 @@
 import threading
-from client_core import ClientCore
+from python_version.client.client_core import ClientCore
 
 
 class Client:
@@ -10,20 +10,26 @@ class Client:
 
     @staticmethod
     def print_msg(data: dict):
-        print(f'\033[1;33m{data["auth"]} - {data["time"]}\n{data["msg"]}\033[0m')
+        print(f'\033[1;33m{data["author"]} - {data["datetime"]}\n{data["content"]}\033[0m')
 
     def read_handler(self):
         while True:
             read_buff = self.core.read()
             if read_buff:
-                self.print_msg(read_buff)
+                if read_buff['type'] == 'message':
+                    self.print_msg(read_buff)
+                else:
+                    pass
+                    # TODO different kind of messages
 
     def write_handler(self):
         while self.is_running:
             send_buff = input()
-            code = self.core.write(send_buff)
-            if code == '\\exit':
+            if send_buff == '\\exit':
+                self.core.disconnect()
                 self.is_running = False
+            else:
+                self.core.write(msg=send_buff)
 
     def run(self):
         self.core.connect()

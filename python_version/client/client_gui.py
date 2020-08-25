@@ -2,7 +2,7 @@ import PySide2.QtWidgets as QtW
 from PySide2.QtCore import Qt, Slot, Signal
 import sys
 import threading
-from client_core import ClientCore
+from python_version.client.client_core import ClientCore
 
 
 class ChatWidget(QtW.QWidget):
@@ -48,11 +48,13 @@ class ChatWidget(QtW.QWidget):
     def send_msg(self):
         msg = self.send_box.toPlainText()
         self.send_box.clear()
-        code = self.core.write(msg)
-        if code == '\\exit':
+        if msg == '\\exit':
+            self.core.disconnect()
             self.update_messages(
                 {'author': '', 'message': 'Disconnected', 'timestamp': ''}
             )
+        else:
+            self.core.write(msg=msg)
 
     @Slot()
     def update_messages(self, new_msg: dict):
@@ -67,12 +69,15 @@ class ChatWidget(QtW.QWidget):
             read_buff = self.core.read()
             if read_buff:
                 print(read_buff)
-                self.msg_signal.emit(
-                    {'author': read_buff['auth'], 'message': read_buff['msg'], 'timestamp': read_buff['time']}
-                )
+                if read_buff['type'] == 'message':
+                    self.msg_signal.emit(
+                        {'author': read_buff['author'],
+                         'message': read_buff['content'],
+                         'timestamp': read_buff['datetime']}
+                    )
 
     def send_disconnect_msg(self) -> int:
-        self.core.write('\\exit')
+        self.core.disconnect()
         return 0
 
 
