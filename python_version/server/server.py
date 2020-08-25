@@ -2,7 +2,7 @@ import socket
 import threading
 from datetime import datetime
 from python_version.parser.parser import ParseError, Parser
-# from python_version.server.accounts import Accounts
+from python_version.server.accounts import Accounts
 
 
 class Server:
@@ -15,8 +15,8 @@ class Server:
         self.sock.listen(12)
         self.hosts = []
         self.parser = Parser(self.encoding)
-        # self.accounts = Accounts('users.db')
-        # self.accounts.create_tables()
+        self.accounts = Accounts(db_name='users.db', encoding=self.encoding)
+        self.accounts.create_tables()
 
     def remove_host(self, ip_addr: str):
         for idx, host in enumerate(self.hosts):
