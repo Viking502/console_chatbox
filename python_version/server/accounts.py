@@ -67,5 +67,5 @@ class Accounts:
         self.conn.close()
 
     @staticmethod
-    def log_err(self, msg):
+    def log_err(msg):
         print(f'\033[1;31m{msg}\033[0m')
