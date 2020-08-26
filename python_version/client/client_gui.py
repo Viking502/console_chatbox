@@ -54,7 +54,7 @@ class ChatWidget(QtW.QWidget):
                 {'author': '', 'message': 'Disconnected', 'timestamp': ''}
             )
         else:
-            self.core.write(msg=msg)
+            self.core.send_msg(message=msg)
 
     @Slot()
     def update_messages(self, new_msg: dict):

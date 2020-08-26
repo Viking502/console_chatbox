@@ -12,12 +12,15 @@ class Parser:
                        'login': {'nick': 0x10, 'password': 0x20}
                         }
                    }
-    type_code = {'message': b'\x00\x00', 'register': b'\x00\x01', 'login': b'\x00\x02', 'disconnect': b'\x00\x03'}
+    type_code = {
+        'message': b'\x00\x00', 'register': b'\x00\x01', 'login': b'\x00\x02', 'disconnect': b'\x00\x03',
+        'authorized': b'\x00\x04'
+                 }
 
     def __init__(self, encoding):
         self.encoding = encoding
 
-    def encode(self, author: str, msg_type: str, datetime: str, content: dict):
+    def encode(self, author: str, msg_type: str, datetime: str, content: dict = None):
         encoded = bytes()
         for key, val in zip(self.sector_size.keys(), [author, msg_type, datetime, content]):
             if key == 'type':
@@ -26,11 +29,20 @@ class Parser:
                 except KeyError:
                     raise ParseError
             elif key == 'content':
-                for arg, cont in val.items():
-                    encoded +=\
-                        pack(f"{self.sector_size[key][msg_type][arg]}s", bytes(cont, encoding=self.encoding))
+                if msg_type in self.sector_size['content'].keys():
+                    if val is None:
+                        raise ParseError
+                    for arg, cont in val.items():
+                        try:
+                            encoded +=\
+                                pack(f"{self.sector_size[key][msg_type][arg]}s", bytes(cont, encoding=self.encoding))
+                        except TypeError:
+                            raise ParseError
             else:
-                encoded += pack(f"{self.sector_size[key]}s", bytes(val, encoding=self.encoding))
+                try:
+                    encoded += pack(f"{self.sector_size[key]}s", bytes(val, encoding=self.encoding))
+                except TypeError:
+                    raise ParseError
         return encoded
 
     def decode(self, message: bytes) -> dict:
@@ -38,16 +50,19 @@ class Parser:
 
         for sector, value in self.sector_size.items():
             if sector == 'content':
-                decoded_msg[sector] = dict()
-                content = value[decoded_msg['type']]
-                for arg, size in content.items():
-                    try:
-                        decoded_msg[sector][arg] =\
-                            unpack(f'{size}s', message[:size])[0].decode(self.encoding).strip('\x00')
-                    except TypeError:
-                        print("key:", arg, " value:", size)
-                        raise ParseError()
-                    message = message[size:]
+                if decoded_msg['type'] in self.sector_size['content'].keys():
+                    decoded_msg[sector] = dict()
+                    content = value[decoded_msg['type']]
+                    for arg, size in content.items():
+                        try:
+                            decoded_msg[sector][arg] =\
+                                unpack(f'{size}s', message[:size])[0].decode(self.encoding).strip('\x00')
+                        except TypeError:
+                            print("key:", arg, " value:", size)
+                            raise ParseError()
+                        message = message[size:]
+                else:
+                    decoded_msg.pop('content', None)
             else:
                 if sector == 'type':
                     decoded_msg[sector] = \

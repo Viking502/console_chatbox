@@ -19,22 +19,28 @@ class Accounts:
             self.conn.commit()
         except sqlite3.OperationalError:
             self.log_err('Unable to create tables')
-        cursor.close()
+            raise
+        finally:
+            cursor.close()
         # TODO table for messages
 
-    def add_user(self, nick: str, password: str):
+    def add_user(self, nick: str, password: str) -> bool:
         cursor = self.conn.cursor()
         try:
             cursor.execute("select id from User where nick = ?;", (nick,))
-            if len(cursor.fetchall()) == 0:
-                raise Exception("nick already taken")
+            if len(cursor.fetchall()) != 0:
+                # raise Exception("nick already taken")
+                return False
 
             new_user = {"nick": nick, "password": hashlib.md5(bytes(password, self.encoding)).digest()}
             cursor.execute("insert into User (nick, password) values (:nick, :password)", new_user)
             self.conn.commit()
+            return True
         except sqlite3.OperationalError:
             self.log_err(f"unable to add user_name: {nick}")
-        cursor.close()
+            raise
+        finally:
+            cursor.close()
 
     def delete_user(self, idx: int):
         cursor = self.conn.cursor()
@@ -46,17 +52,17 @@ class Accounts:
         cursor.close()
 
     def is_valid(self, pswd: str, original_pswd: str) -> bool:
-        print(hashlib.md5(bytes(pswd, self.encoding)).digest(), ' =?= ', original_pswd)
         return hashlib.md5(bytes(pswd, self.encoding)).digest() == original_pswd
 
-    def get_id(self, nick: str, password: str):
+    def log_in(self, nick: str, password: str):
         cursor = self.conn.cursor()
         try:
             cursor.execute("select id, password from User where nick = ?;", (nick,))
-            user_id, user_pwd = cursor.fetchone()
-            print(user_id, user_pwd)
-            if self.is_valid(password, user_pwd):
-                return user_id
+            user_data = cursor.fetchone()
+            if user_data:
+                user_id, user_pwd = user_data
+                if self.is_valid(password, user_pwd):
+                    return user_id
         except sqlite3.OperationalError:
             self.log_err(f"unable to get id of user_name: {nick}")
         finally:

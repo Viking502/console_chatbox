@@ -65,6 +65,18 @@ class TestParser(unittest.TestCase):
         self.assertEqual('abcd', decoded['content']['nick'])
         self.assertEqual('1234', decoded['content']['password'])
 
+    def test_disconnect(self):
+        parser = Parser('utf-8')
+        encoded = parser.encode(
+            author='author',
+            msg_type='disconnect',
+            datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y")
+        )
+        decoded = parser.decode(encoded)
+
+        self.assertEqual('author', decoded['author'])
+        self.assertEqual('disconnect', decoded['type'])
+
 
 if __name__ == '__main__':
     unittest.main()
