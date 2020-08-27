@@ -24,7 +24,7 @@ class MessagesLayout:
         self.messages_box.setAlignment(Qt.AlignTop)
         self.wrapper.setLayout(self.messages_box)
 
-        self.send_box = QtW.QTextEdit("")
+        self.send_box = QtW.QTextEdit()
         self.send_box.setFixedHeight(high // 8)
         self.layout.addWidget(self.send_box, 3, 0)
 
@@ -61,48 +61,60 @@ class LoginLayout:
     def __init__(self, core):
         self.core = core
 
-        self.layout = QtW.QGridLayout()
-        self.layout.setVerticalSpacing(60)
-
+        self.layout = QtW.QFormLayout()
+        self.layout.setSpacing(20)
+        self.layout.setMargin(100)
+        # nick
+        self.nick_layout = QtW.QHBoxLayout()
         self.login_label = QtW.QLabel('nick: ')
-        self.login_label.setFixedHeight(60)
-        # self.login_label.setFixedWidth(280)
-        self.layout.addWidget(self.login_label, 0, 0)
-        self.login_box = QtW.QTextEdit()
-        self.login_box.setFixedHeight(60)
-        # self.login_box.setFixedWidth(280)
-        self.layout.addWidget(self.login_box, 0, 1)
+        self.login_label.setFixedWidth(120)
+        self.nick_layout.addWidget(self.login_label)
+        self.login_box = QtW.QLineEdit()
+        self.login_box.setPlaceholderText('nick')
+        self.login_box.setMaximumWidth(260)
+        self.nick_layout.addWidget(self.login_box)
 
+        self.layout.addRow(self.nick_layout)
+        # password
+        self.pass_layout = QtW.QHBoxLayout()
         self.pass_label = QtW.QLabel('password: ')
-        self.layout.addWidget(self.pass_label, 1, 0)
-        self.pass_box = QtW.QTextEdit()
-        self.pass_box.setFixedHeight(60)
-        # self.pass_box.setFixedWidth(280)
-        self.layout.addWidget(self.pass_box, 1, 1)
+        self.pass_label.setFixedWidth(120)
+        self.pass_layout.addWidget(self.pass_label)
+        self.pass_box = QtW.QLineEdit()
+        self.pass_box.setPlaceholderText('password')
+        self.pass_box.setMaximumWidth(260)
+        self.pass_layout.addWidget(self.pass_box)
 
+        self.layout.addRow(self.pass_layout)
+        # buttons
+        self.buttons_layout = QtW.QHBoxLayout()
         self.login_button = QtW.QPushButton("log_in")
         self.login_button.setStyleSheet("QPushButton:hover { background-color: rgb(200, 200, 200) }")
+        self.login_button.setMaximumWidth(80)
         self.login_button.clicked.connect(self.log_in)
-        self.layout.addWidget(self.login_button, 2, 1)
+        self.buttons_layout.addWidget(self.login_button)
 
         self.register_button = QtW.QPushButton("register")
         self.register_button.setStyleSheet("QPushButton:hover { background-color: rgb(200, 200, 200) }")
+        self.register_button.setMaximumWidth(80)
         self.register_button.clicked.connect(self.register)
-        self.layout.addWidget(self.register_button, 2, 2)
+        self.buttons_layout.addWidget(self.register_button)
 
-        self.server_msg = QtW.QLabel('')
+        self.layout.addRow(self.buttons_layout)
+        # messages from server
+        self.server_msg = QtW.QLabel()
         self.server_msg.setAlignment(Qt.AlignTop)
         self.server_msg.setStyleSheet("QLabel {color: rgb(200, 20, 20)}")
-        self.layout.addWidget(self.server_msg, 3, 0)
+        self.layout.addWidget(self.server_msg)
 
     def log_in(self):
-        nick = self.login_box.toPlainText()
-        password = self.pass_box.toPlainText()
+        nick = self.login_box.text()
+        password = self.pass_box.text()
         self.core.log_in(nick=nick, password=password)
 
     def register(self):
-        nick = self.login_box.toPlainText()
-        password = self.pass_box.toPlainText()
+        nick = self.login_box.text()
+        password = self.pass_box.text()
         self.core.register(nick=nick, password=password)
 
     @Slot()
