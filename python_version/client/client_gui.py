@@ -25,6 +25,7 @@ class MessagesLayout:
         self.wrapper.setLayout(self.messages_box)
 
         self.send_box = QtW.QTextEdit()
+        self.send_box.setPlaceholderText('message')
         self.send_box.setFixedHeight(high // 8)
         self.layout.addWidget(self.send_box, 3, 0)
 
@@ -81,6 +82,7 @@ class LoginLayout:
         self.pass_label.setFixedWidth(120)
         self.pass_layout.addWidget(self.pass_label)
         self.pass_box = QtW.QLineEdit()
+        self.pass_box.setEchoMode(QtW.QLineEdit.Password)
         self.pass_box.setPlaceholderText('password')
         self.pass_box.setMaximumWidth(260)
         self.pass_layout.addWidget(self.pass_box)
