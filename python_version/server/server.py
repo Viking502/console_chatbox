@@ -28,7 +28,7 @@ class Server:
     def print_msg(message: dict):
         print(f'\033[1;33m{message["author"]}: {message["datetime"]}\n{message["content"]["text"]}\033[0m')
 
-    def read_handler(self, conn: socket.socket, addr: str, user_id: int):
+    def read_handler(self, conn: socket.socket, addr: str, user_name: str):
         while True:
             buff = conn.recv(1024)
             if buff:
@@ -39,7 +39,7 @@ class Server:
                     break
                 if decoded_msg['type'] == 'message':
                     encoded_msg = self.parser.encode(
-                        author=addr,
+                        author=user_name,
                         msg_type='message',
                         datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
                         content=decoded_msg['content']
@@ -66,6 +66,7 @@ class Server:
 
     def handle_connection(self, conn, host_addr):
         user_id = None
+        user_name = None
         tries_left = 3
         while not user_id and tries_left > 0:
             buff = conn.recv(1024)
@@ -73,7 +74,9 @@ class Server:
                 buff = self.parser.decode(buff)
                 if buff['type'] == 'login':
                     user_id = self.log_user(buff)
-                    if not user_id:
+                    if user_id:
+                        user_name = buff['content']['nick']
+                    else:
                         tries_left -= 1
                         self.send_server_message(conn, f'Wrong password\n{tries_left} tries left')
                 elif buff['type'] == 'register':
@@ -91,7 +94,7 @@ class Server:
                 datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y")
             ))
             self.hosts.append({'conn': conn, 'addr': host_addr})
-            self.read_handler(conn, host_addr, user_id)
+            self.read_handler(conn=conn, addr=host_addr, user_name=user_name)
         else:
             self.send_server_message(conn, f'Disconnected from server')
         print(f'({host_addr}) has disconnected')
