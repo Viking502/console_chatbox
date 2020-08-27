@@ -47,7 +47,7 @@ to log in type:
 to register new user type:
 \033[1;46m\\register $nick $password\033[0m
 to exit type:
-\033[1;46m\\register $nick $password\033[0m
+\033[1;46m\\exit\033[0m
         ''')
         wait_duration = 5
         while not self.core.is_logged:
