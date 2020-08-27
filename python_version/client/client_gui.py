@@ -90,6 +90,11 @@ class LoginLayout:
         self.register_button.clicked.connect(self.register)
         self.layout.addWidget(self.register_button, 2, 2)
 
+        self.server_msg = QtW.QLabel('')
+        self.server_msg.setAlignment(Qt.AlignTop)
+        self.server_msg.setStyleSheet("QLabel {color: rgb(200, 20, 20)}")
+        self.layout.addWidget(self.server_msg, 3, 0)
+
     def log_in(self):
         nick = self.login_box.toPlainText()
         password = self.pass_box.toPlainText()
@@ -99,6 +104,10 @@ class LoginLayout:
         nick = self.login_box.toPlainText()
         password = self.pass_box.toPlainText()
         self.core.register(nick=nick, password=password)
+
+    @Slot()
+    def update_server_msg(self, new_msg: dict):
+        self.server_msg.setText(f"{new_msg['timestamp']}\n{new_msg['message']}")
 
     def get(self):
         return self.layout
@@ -131,6 +140,7 @@ class ChatWidget(QtW.QWidget):
         self.layouts_stack.addWidget(self.login_widget)
         self.layouts_stack.addWidget(self.messages_widget)
 
+        self.msg_signal.connect(self.login_layout.update_server_msg)
         self.msg_signal.connect(self.messages_layout.update_messages)
         self.setLayout(self.layouts_stack)
 
