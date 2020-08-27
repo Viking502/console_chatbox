@@ -9,24 +9,28 @@ class TestParser(unittest.TestCase):
         parser = Parser(encoding='utf-8')
         msg_size = 0
         for size in parser.sector_size.values():
+            if isinstance(size, dict):
+                size = size['message']['text']
             msg_size += int(size)
         self.assertEqual(msg_size,
                          len(parser.encode(
                              author='-',
                              msg_type='message',
                              datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
-                             content='-')
+                             content={'text': '-'})
                          ))
 
     def test_parse_exceptions(self):
         parser = Parser(encoding='utf-8')
         with self.assertRaises(ParseError):
-            parser.encode('-', '-', '-', '-')
+            parser.encode('-', '-', '-', {'text': '-'})
 
     def test_decode_keys(self):
         parser = Parser(encoding='utf-8')
         msg_size = 0
         for size in parser.sector_size.values():
+            if isinstance(size, dict):
+                size = size['message']['text']
             msg_size += int(size)
         decoded = parser.decode(bytes(msg_size))
 
@@ -40,12 +44,38 @@ class TestParser(unittest.TestCase):
             author='author',
             msg_type='message',
             datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
-            content='test_message')
+            content={'text': 'test_message'})
         decoded = parser.decode(encoded)
 
         self.assertEqual('author', decoded['author'])
         self.assertEqual('message', decoded['type'])
-        self.assertEqual('test_message', decoded['content'])
+        self.assertEqual('test_message', decoded['content']['text'])
+
+    def test_login(self):
+        parser = Parser('utf-8')
+        encoded = parser.encode(
+            author='author',
+            msg_type='login',
+            datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
+            content={'nick': 'abcd', 'password': '1234'})
+        decoded = parser.decode(encoded)
+
+        self.assertEqual('author', decoded['author'])
+        self.assertEqual('login', decoded['type'])
+        self.assertEqual('abcd', decoded['content']['nick'])
+        self.assertEqual('1234', decoded['content']['password'])
+
+    def test_disconnect(self):
+        parser = Parser('utf-8')
+        encoded = parser.encode(
+            author='author',
+            msg_type='disconnect',
+            datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y")
+        )
+        decoded = parser.decode(encoded)
+
+        self.assertEqual('author', decoded['author'])
+        self.assertEqual('disconnect', decoded['type'])
 
 
 if __name__ == '__main__':

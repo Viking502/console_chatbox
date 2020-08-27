@@ -5,14 +5,11 @@ import threading
 from python_version.client.client_core import ClientCore
 
 
-class ChatWidget(QtW.QWidget):
+class MessagesLayout:
 
-    msg_signal = Signal(dict)
+    def __init__(self, high, core):
+        self.core = core
 
-    def __init__(self, config: dict):
-        QtW.QWidget.__init__(self)
-
-        # initialize gui
         self.layout = QtW.QGridLayout()
 
         self.scroll = QtW.QScrollArea()
@@ -27,23 +24,17 @@ class ChatWidget(QtW.QWidget):
         self.messages_box.setAlignment(Qt.AlignTop)
         self.wrapper.setLayout(self.messages_box)
 
-        self.send_box = QtW.QTextEdit("")
-        self.send_box.setFixedHeight(self.height() // 8)
+        self.send_box = QtW.QTextEdit()
+        self.send_box.setFixedHeight(high // 8)
         self.layout.addWidget(self.send_box, 3, 0)
 
         self.send_button = QtW.QPushButton("send!")
         self.send_button.setStyleSheet("QPushButton:hover { background-color: rgb(200, 200, 200) }")
         self.layout.addWidget(self.send_button, 3, 1)
-
-        self.setLayout(self.layout)
-
-        # initialize backend
-        self.core = ClientCore(config)
-        self.core.connect()
-
-        reader = threading.Thread(target=self.read_handler, daemon=True)
-        reader.start()
         self.send_button.clicked.connect(self.send_msg)
+
+    def get(self):
+        return self.layout
 
     def send_msg(self):
         msg = self.send_box.toPlainText()
@@ -54,7 +45,7 @@ class ChatWidget(QtW.QWidget):
                 {'author': '', 'message': 'Disconnected', 'timestamp': ''}
             )
         else:
-            self.core.write(msg=msg)
+            self.core.send_msg(message=msg)
 
     @Slot()
     def update_messages(self, new_msg: dict):
@@ -64,6 +55,107 @@ class ChatWidget(QtW.QWidget):
         self.messages_box.addWidget(message)
         self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
 
+
+class LoginLayout:
+
+    def __init__(self, core):
+        self.core = core
+
+        self.layout = QtW.QFormLayout()
+        self.layout.setSpacing(20)
+        self.layout.setMargin(100)
+        # nick
+        self.nick_layout = QtW.QHBoxLayout()
+        self.login_label = QtW.QLabel('nick: ')
+        self.login_label.setFixedWidth(120)
+        self.nick_layout.addWidget(self.login_label)
+        self.login_box = QtW.QLineEdit()
+        self.login_box.setPlaceholderText('nick')
+        self.login_box.setMaximumWidth(260)
+        self.nick_layout.addWidget(self.login_box)
+
+        self.layout.addRow(self.nick_layout)
+        # password
+        self.pass_layout = QtW.QHBoxLayout()
+        self.pass_label = QtW.QLabel('password: ')
+        self.pass_label.setFixedWidth(120)
+        self.pass_layout.addWidget(self.pass_label)
+        self.pass_box = QtW.QLineEdit()
+        self.pass_box.setPlaceholderText('password')
+        self.pass_box.setMaximumWidth(260)
+        self.pass_layout.addWidget(self.pass_box)
+
+        self.layout.addRow(self.pass_layout)
+        # buttons
+        self.buttons_layout = QtW.QHBoxLayout()
+        self.login_button = QtW.QPushButton("log_in")
+        self.login_button.setStyleSheet("QPushButton:hover { background-color: rgb(200, 200, 200) }")
+        self.login_button.setMaximumWidth(80)
+        self.login_button.clicked.connect(self.log_in)
+        self.buttons_layout.addWidget(self.login_button)
+
+        self.register_button = QtW.QPushButton("register")
+        self.register_button.setStyleSheet("QPushButton:hover { background-color: rgb(200, 200, 200) }")
+        self.register_button.setMaximumWidth(80)
+        self.register_button.clicked.connect(self.register)
+        self.buttons_layout.addWidget(self.register_button)
+
+        self.layout.addRow(self.buttons_layout)
+        # messages from server
+        self.server_msg = QtW.QLabel()
+        self.server_msg.setAlignment(Qt.AlignTop)
+        self.server_msg.setStyleSheet("QLabel {color: rgb(200, 20, 20)}")
+        self.layout.addWidget(self.server_msg)
+
+    def log_in(self):
+        nick = self.login_box.text()
+        password = self.pass_box.text()
+        self.core.log_in(nick=nick, password=password)
+
+    def register(self):
+        nick = self.login_box.text()
+        password = self.pass_box.text()
+        self.core.register(nick=nick, password=password)
+
+    @Slot()
+    def update_server_msg(self, new_msg: dict):
+        self.server_msg.setText(f"{new_msg['timestamp']}\n{new_msg['message']}")
+
+    def get(self):
+        return self.layout
+
+
+class ChatWidget(QtW.QWidget):
+
+    msg_signal = Signal(dict)
+
+    def __init__(self, config: dict):
+        QtW.QWidget.__init__(self)
+
+        # initialize backend
+        self.core = ClientCore(config)
+        self.core.connect()
+
+        reader = threading.Thread(target=self.read_handler, daemon=True)
+        reader.start()
+
+        # initialize gui
+        self.messages_layout = MessagesLayout(self.height(), self.core)
+        self.messages_widget = QtW.QWidget()
+        self.messages_widget.setLayout(self.messages_layout.get())
+
+        self.login_layout = LoginLayout(self.core)
+        self.login_widget = QtW.QWidget()
+        self.login_widget.setLayout(self.login_layout.get())
+
+        self.layouts_stack = QtW.QStackedLayout()
+        self.layouts_stack.addWidget(self.login_widget)
+        self.layouts_stack.addWidget(self.messages_widget)
+
+        self.msg_signal.connect(self.login_layout.update_server_msg)
+        self.msg_signal.connect(self.messages_layout.update_messages)
+        self.setLayout(self.layouts_stack)
+
     def read_handler(self):
         while True:
             read_buff = self.core.read()
@@ -72,9 +164,11 @@ class ChatWidget(QtW.QWidget):
                 if read_buff['type'] == 'message':
                     self.msg_signal.emit(
                         {'author': read_buff['author'],
-                         'message': read_buff['content'],
+                         'message': read_buff['content']['text'],
                          'timestamp': read_buff['datetime']}
                     )
+                elif read_buff['type'] == 'authorized':
+                    self.layouts_stack.setCurrentWidget(self.messages_widget)
 
     def send_disconnect_msg(self) -> int:
         self.core.disconnect()
@@ -89,7 +183,6 @@ if __name__ == '__main__':
 
     widget = ChatWidget(config)
     widget.resize(1200, 900)
-    widget.msg_signal.connect(widget.update_messages)
     widget.show()
 
     sys.exit([app.exec_(), widget.send_disconnect_msg()])

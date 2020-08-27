@@ -1,4 +1,5 @@
 import threading
+import time
 from python_version.client.client_core import ClientCore
 
 
@@ -10,7 +11,7 @@ class Client:
 
     @staticmethod
     def print_msg(data: dict):
-        print(f'\033[1;33m{data["author"]} - {data["datetime"]}\n{data["content"]}\033[0m')
+        print(f'\033[1;33m{data["author"]} - {data["datetime"]}\n{data["content"]["text"]}\033[0m')
 
     def read_handler(self):
         while True:
@@ -29,7 +30,7 @@ class Client:
                 self.core.disconnect()
                 self.is_running = False
             else:
-                self.core.write(msg=send_buff)
+                self.core.send_msg(message=send_buff)
 
     def run(self):
         self.core.connect()
@@ -39,7 +40,42 @@ class Client:
         reader = threading.Thread(target=self.read_handler, daemon=True)
         reader.start()
 
-        self.write_handler()
+        print('''
+YOU ARE NOT LOGGIN IN\n
+to log in type:
+\033[1;46m\\login $nick $password\033[0m
+to register new user type:
+\033[1;46m\\register $nick $password\033[0m
+to exit type:
+\033[1;46m\\register $nick $password\033[0m
+        ''')
+        wait_duration = 5
+        while not self.core.is_logged:
+            cmd = input(">_").split()
+            if cmd[0] in ['\\login', '\\register']:
+                cmd, nick, password = cmd
+            else:
+                cmd = cmd[0]
+
+            if cmd == '\\login':
+                self.core.log_in(nick=nick, password=password)
+            elif cmd == '\\register':
+                self.core.register(nick=nick, password=password)
+            elif cmd == '\\exit':
+                self.core.disconnect()
+                break
+            else:
+                print(f'No command {cmd}')
+
+            while self.core.wait_for_response and wait_duration > 0:
+                time.sleep(1)
+                print('waiting for response..')
+                wait_duration -= 1
+
+        if self.core.is_logged:
+            print('logged successfully')
+            self.write_handler()
+
         print('connection closed')
 
 
