@@ -4,6 +4,7 @@ import sys
 import threading
 from python_version.client.client_core import ClientCore
 
+
 class MessagesLayout:
 
     def __init__(self, high, core):
@@ -109,9 +110,18 @@ class ChatWidget(QtW.QWidget):
 
         # initialize gui
         self.messages_layout = MessagesLayout(self.height(), self.core)
-        self.login_layout = LoginLayout(self.core)
+        self.messages_widget = QtW.QWidget()
+        self.messages_widget.setLayout(self.messages_layout.get())
 
-        self.setLayout(self.login_layout.get())
+        self.login_layout = LoginLayout(self.core)
+        self.login_widget = QtW.QWidget()
+        self.login_widget.setLayout(self.login_layout.get())
+
+        self.layouts_stack = QtW.QStackedLayout()
+        self.layouts_stack.addWidget(self.login_widget)
+        self.layouts_stack.addWidget(self.messages_widget)
+
+        self.setLayout(self.layouts_stack)
 
     def read_handler(self):
         while True:
@@ -124,6 +134,8 @@ class ChatWidget(QtW.QWidget):
                          'message': read_buff['content'],
                          'timestamp': read_buff['datetime']}
                     )
+                elif read_buff['type'] == 'authorized':
+                    self.layouts_stack.setCurrentWidget(self.messages_widget)
 
     def send_disconnect_msg(self) -> int:
         self.core.disconnect()
