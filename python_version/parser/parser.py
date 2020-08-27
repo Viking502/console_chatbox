@@ -9,12 +9,13 @@ class Parser:
     sector_size = {'author': 0x10, 'type': 0x02, 'datetime': 0x11,
                    'content': {
                        'message': {'text': 0x80},
+                       'register': {'nick': 0x10, 'password': 0x20},
                        'login': {'nick': 0x10, 'password': 0x20}
                         }
                    }
     type_code = {
         'message': b'\x00\x00', 'register': b'\x00\x01', 'login': b'\x00\x02', 'disconnect': b'\x00\x03',
-        'authorized': b'\x00\x04'
+        'register_successful': b'\x00\x04', 'authorized': b'\x00\x05'
                  }
 
     def __init__(self, encoding):

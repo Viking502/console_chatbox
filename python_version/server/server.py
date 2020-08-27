@@ -49,37 +49,41 @@ class Server:
                         host['conn'].send(encoded_msg)
                 elif decoded_msg['type'] == 'disconnect':
                     self.remove_host(addr)
-                    print(f'({addr}) has disconnected')
                     break
 
-    def log_user(self, conn):
+    def log_user(self, data):
+        nick = data['content']['nick']
+        password = data['content']['password']
+        user_id = self.accounts.log_in(nick=nick, password=password)
+        if user_id:
+            return int(user_id)
+        return None
+
+    def register_user(self, data):
+        nick = data['content']['nick']
+        password = data['content']['password']
+        return self.accounts.add_user(nick=nick, password=password)
+
+    def handle_connection(self, conn, host_addr):
+        user_id = None
         tries_left = 3
-        while tries_left > 0:
+        while not user_id and tries_left > 0:
             buff = conn.recv(1024)
             if buff:
                 buff = self.parser.decode(buff)
                 if buff['type'] == 'login':
-                    nick = buff['content']['nick']
-                    password = buff['content']['password']
-                    user_id = self.accounts.log_in(nick=nick, password=password)
-                    if user_id:
-                        return int(user_id)
-                    else:
+                    user_id = self.log_user(buff)
+                    if not user_id:
                         tries_left -= 1
                         self.send_server_message(conn, f'Wrong password\n{tries_left} tries left')
+                elif buff['type'] == 'register':
+                    if not self.register_user(buff):
+                        self.send_server_message(conn, f'Register failed\n nick already taken')
                 elif buff['type'] == 'disconnect':
-                    return None
+                    break
                 else:
                     self.send_server_message(conn, f'You have to authorize before sending messages')
-        return None
 
-    def register_user(self, conn):
-        pass
-        # if not self.accounts.add_user():
-        #     print()
-
-    def handle_connection(self, conn, host_addr):
-        user_id = self.log_user(conn)
         if user_id:
             conn.send(self.parser.encode(
                 author='server',

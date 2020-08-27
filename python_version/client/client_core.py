@@ -41,6 +41,10 @@ class ClientCore:
         self.wait_for_response = True
         self.write(msg_type="login", content={'nick': nick, 'password': password})
 
+    def register(self, nick: str, password: str):
+        self.wait_for_response = True
+        self.write(msg_type="register", content={'nick': nick, 'password': password})
+
     def send_msg(self, message: str):
         self.write(msg_type="message", content={'text': message})
 

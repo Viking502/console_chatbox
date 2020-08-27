@@ -62,21 +62,22 @@ class LoginLayout:
         self.core = core
 
         self.layout = QtW.QGridLayout()
+        self.layout.setVerticalSpacing(60)
 
         self.login_label = QtW.QLabel('nick: ')
         self.login_label.setFixedHeight(60)
-        self.login_label.setFixedWidth(280)
+        # self.login_label.setFixedWidth(280)
         self.layout.addWidget(self.login_label, 0, 0)
         self.login_box = QtW.QTextEdit()
         self.login_box.setFixedHeight(60)
-        self.login_box.setFixedWidth(280)
+        # self.login_box.setFixedWidth(280)
         self.layout.addWidget(self.login_box, 0, 1)
 
         self.pass_label = QtW.QLabel('password: ')
         self.layout.addWidget(self.pass_label, 1, 0)
         self.pass_box = QtW.QTextEdit()
         self.pass_box.setFixedHeight(60)
-        self.pass_box.setFixedWidth(280)
+        # self.pass_box.setFixedWidth(280)
         self.layout.addWidget(self.pass_box, 1, 1)
 
         self.login_button = QtW.QPushButton("log_in")
@@ -84,11 +85,20 @@ class LoginLayout:
         self.login_button.clicked.connect(self.log_in)
         self.layout.addWidget(self.login_button, 2, 1)
 
+        self.register_button = QtW.QPushButton("register")
+        self.register_button.setStyleSheet("QPushButton:hover { background-color: rgb(200, 200, 200) }")
+        self.register_button.clicked.connect(self.register)
+        self.layout.addWidget(self.register_button, 2, 2)
+
     def log_in(self):
         nick = self.login_box.toPlainText()
         password = self.pass_box.toPlainText()
-        print(nick, password)
         self.core.log_in(nick=nick, password=password)
+
+    def register(self):
+        nick = self.login_box.toPlainText()
+        password = self.pass_box.toPlainText()
+        self.core.register(nick=nick, password=password)
 
     def get(self):
         return self.layout
@@ -121,6 +131,7 @@ class ChatWidget(QtW.QWidget):
         self.layouts_stack.addWidget(self.login_widget)
         self.layouts_stack.addWidget(self.messages_widget)
 
+        self.msg_signal.connect(self.messages_layout.update_messages)
         self.setLayout(self.layouts_stack)
 
     def read_handler(self):
@@ -131,7 +142,7 @@ class ChatWidget(QtW.QWidget):
                 if read_buff['type'] == 'message':
                     self.msg_signal.emit(
                         {'author': read_buff['author'],
-                         'message': read_buff['content'],
+                         'message': read_buff['content']['text'],
                          'timestamp': read_buff['datetime']}
                     )
                 elif read_buff['type'] == 'authorized':
@@ -150,7 +161,6 @@ if __name__ == '__main__':
 
     widget = ChatWidget(config)
     widget.resize(1200, 900)
-    widget.msg_signal.connect(widget.messages_layout.update_messages)
     widget.show()
 
     sys.exit([app.exec_(), widget.send_disconnect_msg()])
