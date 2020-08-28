@@ -5,6 +5,54 @@ import threading
 from python_version.client.client_core import ClientCore
 
 
+class ServerConnectionLayout:
+
+    def __init__(self, entry_func: callable, default_config: tuple = None):
+
+        self.entry_func = entry_func
+        default_ip, default_port = None, None
+        if default_config:
+            default_ip, default_port = default_config
+
+        self.layout = QtW.QVBoxLayout()
+        self.layout.setMargin(100)
+        self.layout.setAlignment(Qt.AlignCenter)
+
+        header = QtW.QLabel('Connect to server')
+        self.layout.addWidget(header)
+
+        self.addr_box = QtW.QLineEdit()
+        if default_ip:
+            self.addr_box.setText(default_ip)
+        self.addr_box.setPlaceholderText('server address IPv4')
+        self.addr_box.setMaximumWidth(260)
+        self.layout.addWidget(self.addr_box)
+
+        self.port_box = QtW.QLineEdit()
+        self.port_box.setPlaceholderText('server port')
+        if default_port:
+            self.port_box.setText(str(default_port))
+        self.port_box.setMaximumWidth(260)
+        self.layout.addWidget(self.port_box)
+
+        self.connect_button = QtW.QPushButton('Connect')
+        self.connect_button.setFixedWidth(80)
+        self.connect_button.setStyleSheet("QPushButton:hover { background-color: rgb(200, 200, 200) }")
+        self.connect_button.clicked.connect(self.open_connection)
+        self.layout.addWidget(self.connect_button)
+
+    def open_connection(self):
+        ip = self.addr_box.text()
+        try:
+            port = int(self.port_box.text())
+        except ValueError:
+            port = None
+        self.entry_func(ip=ip, port=port)
+
+    def get(self):
+        return self.layout
+
+
 class MessagesLayout:
 
     def __init__(self, high, core):
@@ -65,6 +113,8 @@ class LoginLayout:
         self.layout = QtW.QFormLayout()
         self.layout.setSpacing(20)
         self.layout.setMargin(100)
+        self.layout.setAlignment(Qt.AlignCenter)
+
         # nick
         self.nick_layout = QtW.QHBoxLayout()
         self.login_label = QtW.QLabel('nick: ')
@@ -131,17 +181,16 @@ class ChatWidget(QtW.QWidget):
 
     msg_signal = Signal(dict)
 
-    def __init__(self, config: dict):
+    def __init__(self, config: tuple = None):
         QtW.QWidget.__init__(self)
 
         # initialize backend
         self.core = ClientCore(config)
-        self.core.connect()
-
-        reader = threading.Thread(target=self.read_handler, daemon=True)
-        reader.start()
+        self.reader = threading.Thread(target=self.read_handler, daemon=True)
 
         # initialize gui
+        self.layouts_stack = QtW.QStackedLayout()
+
         self.messages_layout = MessagesLayout(self.height(), self.core)
         self.messages_widget = QtW.QWidget()
         self.messages_widget.setLayout(self.messages_layout.get())
@@ -150,13 +199,32 @@ class ChatWidget(QtW.QWidget):
         self.login_widget = QtW.QWidget()
         self.login_widget.setLayout(self.login_layout.get())
 
-        self.layouts_stack = QtW.QStackedLayout()
+        self.connection_layout = ServerConnectionLayout(
+            entry_func=self.run_connection,
+            default_config=default_connection
+        )
+        self.connection_widget = QtW.QWidget()
+        self.connection_widget.setLayout(self.connection_layout.get())
+
+        self.layouts_stack.addWidget(self.connection_widget)
         self.layouts_stack.addWidget(self.login_widget)
         self.layouts_stack.addWidget(self.messages_widget)
 
         self.msg_signal.connect(self.login_layout.update_server_msg)
         self.msg_signal.connect(self.messages_layout.update_messages)
         self.setLayout(self.layouts_stack)
+
+    def run_connection(self, ip, port):
+        is_connected = False
+        try:
+            self.core.connect(server_ip=ip, server_port=port)
+            is_connected = True
+        except ConnectionRefusedError:
+            print(f'can\'t connect to server at {ip}:{port}')
+
+        if is_connected:
+            self.layouts_stack.setCurrentWidget(self.login_widget)
+            self.reader.start()
 
     def read_handler(self):
         while True:
@@ -181,9 +249,9 @@ if __name__ == '__main__':
     app = QtW.QApplication(sys.argv)
 
     # set ip and port of server
-    config = ('0.0.0.0', 1111)
+    default_connection = ('0.0.0.0', 1111)
 
-    widget = ChatWidget(config)
+    widget = ChatWidget(default_connection)
     widget.resize(1200, 900)
     widget.show()
 

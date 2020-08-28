@@ -5,8 +5,8 @@ from python_version.client.client_core import ClientCore
 
 class Client:
 
-    def __init__(self, config: dict):
-        self.core = ClientCore(config)
+    def __init__(self, default_connection: tuple = None):
+        self.core = ClientCore(default_connection)
         self.is_running = False
 
     @staticmethod
@@ -33,7 +33,23 @@ class Client:
                 self.core.send_msg(message=send_buff)
 
     def run(self):
-        self.core.connect()
+
+        if self.core.default_connection:
+            ip, port = self.core.default_connection
+        else:
+            print(f'provide sever address')
+            ip = input('IPv4: >_')
+            port = input('port: >_')
+            try:
+                port = int(port)
+            except ValueError:
+                port = None
+        try:
+            self.core.connect(ip, port)
+        except ConnectionRefusedError:
+            print(f'can\'t connect to server at {ip}:{port}')
+            return 1
+
         self.is_running = True
         print('connected with server')
 
@@ -81,5 +97,5 @@ to exit type:
 
 if __name__ == '__main__':
     config = ('0.0.0.0', 1111)
-    client = Client(config)
+    client = Client()
     client.run()
