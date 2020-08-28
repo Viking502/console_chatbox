@@ -9,15 +9,22 @@ class ClientCore:
     is_logged = False
     wait_for_response = False
 
-    def __init__(self, config: dict):
+    def __init__(self, default: tuple = None):
         self.host_name = socket.gethostname()
         self.ip = socket.gethostbyname(self.host_name)
-        self.server_ip, self.server_port = config
+
+        self.default_connection = default
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.parser = Parser(encoding=self.encoding)
 
-    def connect(self):
-        self.sock.connect((self.server_ip, self.server_port))
+    def connect(self, server_ip: str = None, server_port: int = None):
+        if not server_ip or not server_port:
+            if self.default_connection:
+                server_ip, server_port = self.default_connection
+            else:
+                raise Exception('no server address provided')
+        self.sock.connect((server_ip, server_port))
 
     def read(self):
         read_buff = self.sock.recv(1024)
