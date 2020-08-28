@@ -19,7 +19,7 @@ class ClientCore:
         self.parser = Parser(encoding=self.encoding)
 
     def connect(self, server_ip: str = None, server_port: int = None):
-        if not server_ip and not server_port:
+        if not server_ip or not server_port:
             if self.default_connection:
                 server_ip, server_port = self.default_connection
             else:
