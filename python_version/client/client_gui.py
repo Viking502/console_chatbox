@@ -180,6 +180,7 @@ class LoginLayout:
 class ChatWidget(QtW.QWidget):
 
     msg_signal = Signal(dict)
+    server_msg_signal = Signal(dict)
 
     def __init__(self, config: tuple = None):
         QtW.QWidget.__init__(self)
@@ -210,7 +211,7 @@ class ChatWidget(QtW.QWidget):
         self.layouts_stack.addWidget(self.login_widget)
         self.layouts_stack.addWidget(self.messages_widget)
 
-        self.msg_signal.connect(self.login_layout.update_server_msg)
+        self.server_msg_signal.connect(self.login_layout.update_server_msg)
         self.msg_signal.connect(self.messages_layout.update_messages)
         self.setLayout(self.layouts_stack)
 
@@ -231,11 +232,19 @@ class ChatWidget(QtW.QWidget):
             read_buff = self.core.read()
             if read_buff:
                 print(read_buff)
-                if read_buff['type'] in ['message', 'server_message']:
+                if read_buff['type'] == 'message':
                     self.msg_signal.emit(
                         {'author': read_buff['author'],
                          'message': read_buff['content']['text'],
-                         'timestamp': read_buff['datetime']}
+                         'timestamp': read_buff['datetime']
+                         }
+                    )
+                elif read_buff['type'] == 'server_message':
+                    self.server_msg_signal.emit(
+                        {
+                         'message': read_buff['content']['text'],
+                         'timestamp': read_buff['datetime']
+                        }
                     )
                 elif read_buff['type'] == 'login_successful':
                     self.layouts_stack.setCurrentWidget(self.messages_widget)
