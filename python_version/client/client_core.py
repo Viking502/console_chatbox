@@ -7,7 +7,6 @@ class ClientCore:
 
     encoding = 'utf-8'
     is_logged = False
-    wait_for_response = False
 
     def __init__(self, default: tuple = None):
         self.host_name = socket.gethostname()
@@ -28,7 +27,6 @@ class ClientCore:
 
     def read(self):
         read_buff = self.sock.recv(1024)
-        self.wait_for_response = False
         if read_buff:
             read_buff = self.parser.decode(read_buff)
             if read_buff['type'] == 'authorized':
@@ -45,11 +43,9 @@ class ClientCore:
         ))
 
     def log_in(self, nick: str, password: str):
-        self.wait_for_response = True
         self.write(msg_type="login", content={'nick': nick, 'password': password})
 
     def register(self, nick: str, password: str):
-        self.wait_for_response = True
         self.write(msg_type="register", content={'nick': nick, 'password': password})
 
     def send_msg(self, message: str):
