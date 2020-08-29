@@ -29,7 +29,7 @@ class ClientCore:
         read_buff = self.sock.recv(1024)
         if read_buff:
             read_buff = self.parser.decode(read_buff)
-            if read_buff['type'] == 'authorized':
+            if read_buff['type'] == 'login_successful':
                 self.is_logged = True
             return read_buff
         return None

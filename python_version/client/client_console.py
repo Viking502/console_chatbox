@@ -21,7 +21,7 @@ class Client:
                 self.wait_for_response = False
                 if read_buff['type'] == 'message':
                     self.print_msg(read_buff)
-                elif read_buff['type'] == 'authorized':
+                elif read_buff['type'] == 'login_successful':
                     print('\033[1;32mLogged successfully\033[0m')
                 elif read_buff['type'] == 'register_successfully':
                     print('\033[1;32mLogged successfully\033[0m')
