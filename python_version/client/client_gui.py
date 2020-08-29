@@ -2,6 +2,7 @@ import PySide2.QtWidgets as QtW
 from PySide2.QtCore import Qt, Slot, Signal
 import sys
 import threading
+from datetime import datetime
 from python_version.client.client_core import ClientCore
 
 
@@ -153,11 +154,6 @@ class LoginLayout:
         self.buttons_layout.addWidget(self.register_button)
 
         self.layout.addRow(self.buttons_layout)
-        # messages from server
-        self.server_msg = QtW.QLabel()
-        self.server_msg.setAlignment(Qt.AlignTop)
-        self.server_msg.setStyleSheet("QLabel {color: rgb(200, 20, 20)}")
-        self.layout.addWidget(self.server_msg)
 
     def log_in(self):
         nick = self.login_box.text()
@@ -169,10 +165,6 @@ class LoginLayout:
         password = self.pass_box.text()
         self.core.register(nick=nick, password=password)
 
-    @Slot()
-    def update_server_msg(self, new_msg: dict):
-        self.server_msg.setText(f"{new_msg['timestamp']}\n{new_msg['message']}")
-
     def get(self):
         return self.layout
 
@@ -180,6 +172,7 @@ class LoginLayout:
 class ChatWidget(QtW.QWidget):
 
     msg_signal = Signal(dict)
+    server_msg_signal = Signal(dict)
 
     def __init__(self, config: tuple = None):
         QtW.QWidget.__init__(self)
@@ -210,17 +203,34 @@ class ChatWidget(QtW.QWidget):
         self.layouts_stack.addWidget(self.login_widget)
         self.layouts_stack.addWidget(self.messages_widget)
 
-        self.msg_signal.connect(self.login_layout.update_server_msg)
+        self.server_msg_signal.connect(self.update_server_msg)
         self.msg_signal.connect(self.messages_layout.update_messages)
-        self.setLayout(self.layouts_stack)
+
+        # messages from server
+        self.server_msg = QtW.QLabel()
+        self.server_msg.setAlignment(Qt.AlignTop)
+        self.server_msg.setStyleSheet("QLabel {color: rgb(200, 20, 20); border: 2px solid rgb(200, 200, 200)}")
+
+        self.container = QtW.QVBoxLayout()
+        self.container.addLayout(self.layouts_stack)
+        self.container.addWidget(self.server_msg)
+        self.setLayout(self.container)
+
+    @Slot()
+    def update_server_msg(self, new_msg: dict):
+        self.server_msg.setText(f"{new_msg['timestamp']}: {new_msg['message']}")
 
     def run_connection(self, ip, port):
         is_connected = False
         try:
             self.core.connect(server_ip=ip, server_port=port)
             is_connected = True
+            self.server_msg.clear()
         except ConnectionRefusedError:
-            print(f'can\'t connect to server at {ip}:{port}')
+            self.server_msg_signal.emit({
+                'message': f'can\'t connect to server at {ip}:{port}',
+                'timestamp': datetime.now().strftime("%H:%M:%S %d-%m-%y")
+            })
 
         if is_connected:
             self.layouts_stack.setCurrentWidget(self.login_widget)
@@ -235,10 +245,19 @@ class ChatWidget(QtW.QWidget):
                     self.msg_signal.emit(
                         {'author': read_buff['author'],
                          'message': read_buff['content']['text'],
-                         'timestamp': read_buff['datetime']}
+                         'timestamp': read_buff['datetime']
+                         }
+                    )
+                elif read_buff['type'] == 'server_message':
+                    self.server_msg_signal.emit(
+                        {
+                         'message': read_buff['content']['text'],
+                         'timestamp': read_buff['datetime']
+                        }
                     )
                 elif read_buff['type'] == 'login_successful':
                     self.layouts_stack.setCurrentWidget(self.messages_widget)
+                    self.server_msg.clear()
 
     def send_disconnect_msg(self) -> int:
         self.core.disconnect()

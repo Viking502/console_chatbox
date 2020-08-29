@@ -78,7 +78,7 @@ class Server:
                         user_name = buff['content']['nick']
                     else:
                         tries_left -= 1
-                        self.send_server_message(conn, f'Wrong password\n{tries_left} tries left')
+                        self.send_server_message(conn, f'Wrong password! {tries_left} tries left')
                 elif buff['type'] == 'register':
                     if not self.register_user(buff):
                         self.send_server_message(conn, f'Register failed\n nick already taken')
@@ -114,7 +114,7 @@ class Server:
 
         encoded_msg = self.parser.encode(
             author='server',
-            msg_type='message',
+            msg_type='server_message',
             datetime=curr_time,
             content={'text': msg}
         )
