@@ -26,8 +26,8 @@ class Server:
                 break
 
     @staticmethod
-    def print_msg(author: str, message: str, timestamp: str):
-        print(f'\033[1;33m{author}: {timestamp}\n{message}\033[0m')
+    def print_msg(author: str, receiver: str, message: str, timestamp: str):
+        print(f'\033[1;33m{author} -> {receiver}: {timestamp}\n{message}\033[0m')
 
     def read_handler(self, conn: socket.socket, addr: str, user_name: str):
         while True:
@@ -39,17 +39,28 @@ class Server:
                     print('parse error')
                     break
                 if decoded_msg['type'] == 'message':
+                    receiver = decoded_msg['content']['receiver']
                     encoded_msg = self.parser.encode(
                         msg_type='message',
                         datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
-                        content={'author': user_name, 'receiver': '\\all', 'text': decoded_msg['content']['text']}
+                        content={'author': user_name,
+                                 'receiver': receiver,
+                                 'text': decoded_msg['content']['text']
+                                 }
                         )
                     self.print_msg(author=user_name,
+                                   receiver=receiver,
                                    message=decoded_msg['content']['text'],
                                    timestamp=decoded_msg['datetime']
                                    )
-                    for host in self.hosts:
-                        host['conn'].send(encoded_msg)
+                    if receiver == '\\all':
+                        for host in self.hosts:
+                            host['conn'].send(encoded_msg)
+                    else:
+                        for host in self.hosts:
+                            if host['nick'] == receiver:
+                                host['conn'].send(encoded_msg)
+
                 elif decoded_msg['type'] == 'disconnect':
                     self.remove_host(addr)
                     break
@@ -95,7 +106,7 @@ class Server:
                 msg_type='login_successful',
                 datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y")
             ))
-            self.hosts.append({'conn': conn, 'addr': host_addr})
+            self.hosts.append({'conn': conn, 'addr': host_addr, 'nick': user_name})
             self.read_handler(conn=conn, addr=host_addr, user_name=user_name)
         else:
             self.send_server_message(conn, f'Disconnected from server')

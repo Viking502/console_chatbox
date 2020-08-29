@@ -92,15 +92,19 @@ class MessagesLayout:
         return self.layout
 
     def send_msg(self):
-        msg = self.send_box.toPlainText()
+        message = self.send_box.toPlainText()
+        receiver = self.receiver_box.text()
         self.send_box.clear()
-        if msg == '\\exit':
+        if message == '\\exit':
             self.core.disconnect()
             self.update_messages(
                 {'author': '', 'message': 'Disconnected', 'timestamp': ''}
             )
         else:
-            self.core.send_msg(message=msg)
+            if receiver != '':
+                self.core.send_msg(receiver=receiver, message=message)
+            else:
+                self.core.send_msg(message=message)
 
     @Slot()
     def update_messages(self, new_msg: dict):
