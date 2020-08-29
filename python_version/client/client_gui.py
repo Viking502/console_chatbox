@@ -237,7 +237,7 @@ class ChatWidget(QtW.QWidget):
                          'message': read_buff['content']['text'],
                          'timestamp': read_buff['datetime']}
                     )
-                elif read_buff['type'] == 'authorized':
+                elif read_buff['type'] == 'login_successful':
                     self.layouts_stack.setCurrentWidget(self.messages_widget)
 
     def send_disconnect_msg(self) -> int:

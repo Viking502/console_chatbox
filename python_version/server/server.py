@@ -90,7 +90,7 @@ class Server:
         if user_id:
             conn.send(self.parser.encode(
                 author='server',
-                msg_type='authorized',
+                msg_type='login_successful',
                 datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y")
             ))
             self.hosts.append({'conn': conn, 'addr': host_addr})

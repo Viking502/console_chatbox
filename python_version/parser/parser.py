@@ -15,7 +15,7 @@ class Parser:
                    }
     type_code = {
         'message': b'\x00\x00', 'register': b'\x00\x01', 'login': b'\x00\x02', 'disconnect': b'\x00\x03',
-        'register_successful': b'\x00\x04', 'authorized': b'\x00\x05'
+        'register_successful': b'\x00\x04', 'login_successful': b'\x00\x05'
                  }
 
     def __init__(self, encoding):

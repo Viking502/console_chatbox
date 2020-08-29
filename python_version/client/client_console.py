@@ -8,6 +8,7 @@ class Client:
     def __init__(self, default_connection: tuple = None):
         self.core = ClientCore(default_connection)
         self.is_running = False
+        self.wait_for_response = False
 
     @staticmethod
     def print_msg(data: dict):
@@ -17,11 +18,13 @@ class Client:
         while True:
             read_buff = self.core.read()
             if read_buff:
+                self.wait_for_response = False
                 if read_buff['type'] == 'message':
                     self.print_msg(read_buff)
-                else:
-                    pass
-                    # TODO different kind of messages
+                elif read_buff['type'] == 'login_successful':
+                    print('\033[1;32mLogged successfully\033[0m')
+                elif read_buff['type'] == 'register_successfully':
+                    print('\033[1;32mLogged successfully\033[0m')
 
     def write_handler(self):
         while self.is_running:
@@ -74,8 +77,10 @@ to exit type:
                 cmd = cmd[0]
 
             if cmd == '\\login':
+                self.wait_for_response = True
                 self.core.log_in(nick=nick, password=password)
             elif cmd == '\\register':
+                self.wait_for_response = True
                 self.core.register(nick=nick, password=password)
             elif cmd == '\\exit':
                 self.core.disconnect()
@@ -83,13 +88,12 @@ to exit type:
             else:
                 print(f'No command {cmd}')
 
-            while self.core.wait_for_response and wait_duration > 0:
-                time.sleep(1)
+            while self.wait_for_response and wait_duration > 0:
                 print('waiting for response..')
+                time.sleep(1)
                 wait_duration -= 1
 
         if self.core.is_logged:
-            print('logged successfully')
             self.write_handler()
 
         print('connection closed')
