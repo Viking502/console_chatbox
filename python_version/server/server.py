@@ -42,7 +42,7 @@ class Server:
                     encoded_msg = self.parser.encode(
                         msg_type='message',
                         datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
-                        content={'author': user_name, 'text': decoded_msg['content']['text']}
+                        content={'author': user_name, 'receiver': '\\all', 'text': decoded_msg['content']['text']}
                         )
                     self.print_msg(author=user_name,
                                    message=decoded_msg['content']['text'],

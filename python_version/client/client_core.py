@@ -47,8 +47,8 @@ class ClientCore:
     def register(self, nick: str, password: str):
         self.write(msg_type="register", content={'nick': nick, 'password': password})
 
-    def send_msg(self, message: str):
-        self.write(msg_type="message", content={'author': '-', 'text': message})
+    def send_msg(self, message: str, receiver: str = '\\all'):
+        self.write(msg_type="message", content={'author': '-', 'receiver': receiver, 'text': message})
 
     def disconnect(self):
         self.write(msg_type='disconnect')

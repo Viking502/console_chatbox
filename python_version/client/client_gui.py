@@ -73,14 +73,19 @@ class MessagesLayout:
         self.messages_box.setAlignment(Qt.AlignTop)
         self.wrapper.setLayout(self.messages_box)
 
+        self.receiver_box = QtW.QLineEdit()
+        self.receiver_box.setPlaceholderText('receiver')
+        self.receiver_box.setFixedHeight(high // 8)
+        self.layout.addWidget(self.receiver_box, 3, 0)
+
         self.send_box = QtW.QTextEdit()
         self.send_box.setPlaceholderText('message')
         self.send_box.setFixedHeight(high // 8)
-        self.layout.addWidget(self.send_box, 3, 0)
+        self.layout.addWidget(self.send_box, 4, 0)
 
         self.send_button = QtW.QPushButton("send!")
         self.send_button.setStyleSheet("QPushButton:hover { background-color: rgb(200, 200, 200) }")
-        self.layout.addWidget(self.send_button, 3, 1)
+        self.layout.addWidget(self.send_button, 4, 1)
         self.send_button.clicked.connect(self.send_msg)
 
     def get(self):

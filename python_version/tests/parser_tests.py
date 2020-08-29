@@ -9,26 +9,29 @@ class TestParser(unittest.TestCase):
         parser = Parser(encoding='utf-8')
         msg_size = parser.sector_size['type'] + parser.sector_size['datetime'] \
                     + parser.sector_size['content']['message']['text'] \
+                    + parser.sector_size['content']['message']['receiver'] \
                     + parser.sector_size['content']['message']['author']
 
         self.assertEqual(msg_size,
                          len(parser.encode(
                              msg_type='message',
                              datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
-                             content={'author': '-', 'text': '-'}))
+                             content={'author': '-', 'receiver': '-', 'text': '-'}))
                          )
 
     def test_parse_exceptions(self):
         parser = Parser(encoding='utf-8')
         with self.assertRaises(ParseError):
-            parser.encode('-', '-', {'author': '-', 'text': '-'})
+            parser.encode('-', '-', {'author': '-', 'receiver': '-', 'text': '-'})
 
     def test_decode_keys(self):
         parser = Parser(encoding='utf-8')
         msg_size = 0
         for size in parser.sector_size.values():
             if isinstance(size, dict):
-                msg_size += int(size['message']['text']) + int(size['message']['author'])
+                msg_size += int(size['message']['text'])\
+                            + int(size['message']['author'])\
+                            + int(size['message']['receiver'])
             else:
                 msg_size += int(size)
         decoded = parser.decode(bytes(msg_size))
@@ -42,11 +45,12 @@ class TestParser(unittest.TestCase):
         encoded = parser.encode(
             msg_type='message',
             datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
-            content={'author': 'author', 'text': 'test_message'})
+            content={'author': 'author', 'receiver': 'receiver', 'text': 'test_message'})
         decoded = parser.decode(encoded)
 
         self.assertEqual('message', decoded['type'])
         self.assertEqual('author', decoded['content']['author'])
+        self.assertEqual('receiver', decoded['content']['receiver'])
         self.assertEqual('test_message', decoded['content']['text'])
 
     def test_login(self):

@@ -8,7 +8,7 @@ class ParseError(Exception):
 class Parser:
     sector_size = {'type': 0x02, 'datetime': 0x11,
                    'content': {
-                       'message': {'author': 0x10, 'text': 0x80},
+                       'message': {'author': 0x10, 'receiver': 0x10, 'text': 0x80},
                        'server_message': {'text': 0x80},
                        'register': {'nick': 0x10, 'password': 0x20},
                        'login': {'nick': 0x10, 'password': 0x20}
