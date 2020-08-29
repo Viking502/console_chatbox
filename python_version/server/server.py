@@ -114,7 +114,7 @@ class Server:
 
         encoded_msg = self.parser.encode(
             author='server',
-            msg_type='message',
+            msg_type='server_message',
             datetime=curr_time,
             content={'text': msg}
         )

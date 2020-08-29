@@ -19,7 +19,7 @@ class Client:
             read_buff = self.core.read()
             if read_buff:
                 self.wait_for_response = False
-                if read_buff['type'] == 'message':
+                if read_buff['type'] in ['message', 'server_message']:
                     self.print_msg(read_buff)
                 elif read_buff['type'] == 'login_successful':
                     print('\033[1;32mLogged successfully\033[0m')

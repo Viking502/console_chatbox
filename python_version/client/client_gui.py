@@ -231,7 +231,7 @@ class ChatWidget(QtW.QWidget):
             read_buff = self.core.read()
             if read_buff:
                 print(read_buff)
-                if read_buff['type'] == 'message':
+                if read_buff['type'] in ['message', 'server_message']:
                     self.msg_signal.emit(
                         {'author': read_buff['author'],
                          'message': read_buff['content']['text'],
