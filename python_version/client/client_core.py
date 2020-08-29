@@ -36,7 +36,6 @@ class ClientCore:
 
     def write(self, msg_type: str, content: dict = None):
         self.sock.send(self.parser.encode(
-            author=self.ip,
             msg_type=msg_type,
             datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
             content=content
@@ -49,7 +48,7 @@ class ClientCore:
         self.write(msg_type="register", content={'nick': nick, 'password': password})
 
     def send_msg(self, message: str):
-        self.write(msg_type="message", content={'text': message})
+        self.write(msg_type="message", content={'author': '-', 'text': message})
 
     def disconnect(self):
         self.write(msg_type='disconnect')

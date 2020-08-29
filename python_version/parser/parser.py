@@ -6,9 +6,9 @@ class ParseError(Exception):
 
 
 class Parser:
-    sector_size = {'author': 0x10, 'type': 0x02, 'datetime': 0x11,
+    sector_size = {'type': 0x02, 'datetime': 0x11,
                    'content': {
-                       'message': {'text': 0x80},
+                       'message': {'author': 0x10, 'text': 0x80},
                        'server_message': {'text': 0x80},
                        'register': {'nick': 0x10, 'password': 0x20},
                        'login': {'nick': 0x10, 'password': 0x20}
@@ -22,9 +22,9 @@ class Parser:
     def __init__(self, encoding):
         self.encoding = encoding
 
-    def encode(self, author: str, msg_type: str, datetime: str, content: dict = None):
+    def encode(self, msg_type: str, datetime: str, content: dict = None):
         encoded = bytes()
-        for key, val in zip(self.sector_size.keys(), [author, msg_type, datetime, content]):
+        for key, val in zip(self.sector_size.keys(), [msg_type, datetime, content]):
             if key == 'type':
                 try:
                     encoded += self.type_code[val]

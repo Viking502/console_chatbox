@@ -1,3 +1,4 @@
+import sys
 import socket
 import threading
 from datetime import datetime
@@ -25,8 +26,8 @@ class Server:
                 break
 
     @staticmethod
-    def print_msg(message: dict):
-        print(f'\033[1;33m{message["author"]}: {message["datetime"]}\n{message["content"]["text"]}\033[0m')
+    def print_msg(author: str, message: str, timestamp: str):
+        print(f'\033[1;33m{author}: {timestamp}\n{message}\033[0m')
 
     def read_handler(self, conn: socket.socket, addr: str, user_name: str):
         while True:
@@ -39,12 +40,14 @@ class Server:
                     break
                 if decoded_msg['type'] == 'message':
                     encoded_msg = self.parser.encode(
-                        author=user_name,
                         msg_type='message',
                         datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
-                        content=decoded_msg['content']
+                        content={'author': user_name, 'text': decoded_msg['content']['text']}
                         )
-                    self.print_msg(decoded_msg)
+                    self.print_msg(author=user_name,
+                                   message=decoded_msg['content']['text'],
+                                   timestamp=decoded_msg['datetime']
+                                   )
                     for host in self.hosts:
                         host['conn'].send(encoded_msg)
                 elif decoded_msg['type'] == 'disconnect':
@@ -89,7 +92,6 @@ class Server:
 
         if user_id:
             conn.send(self.parser.encode(
-                author='server',
                 msg_type='login_successful',
                 datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y")
             ))
@@ -113,7 +115,6 @@ class Server:
         # self.print_msg({'author': 'server', 'datetime': curr_time, 'text': msg})
 
         encoded_msg = self.parser.encode(
-            author='server',
             msg_type='server_message',
             datetime=curr_time,
             content={'text': msg}
@@ -124,5 +125,11 @@ class Server:
 if __name__ == '__main__':
 
     config = ('0.0.0.0', 1111)
+    if len(sys.argv) == 2:
+        try:
+            config = sys.argv[0], int(sys.argv[1])
+        except ValueError:
+            raise Exception('Wrong arguments\nusage:\nserver IPv4 port')
+
     server = Server(config)
     server.run()

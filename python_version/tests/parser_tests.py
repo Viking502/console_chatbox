@@ -7,60 +7,56 @@ class TestParser(unittest.TestCase):
 
     def test_decode_size(self):
         parser = Parser(encoding='utf-8')
-        msg_size = 0
-        for size in parser.sector_size.values():
-            if isinstance(size, dict):
-                size = size['message']['text']
-            msg_size += int(size)
+        msg_size = parser.sector_size['type'] + parser.sector_size['datetime'] \
+                    + parser.sector_size['content']['message']['text'] \
+                    + parser.sector_size['content']['message']['author']
+
         self.assertEqual(msg_size,
                          len(parser.encode(
-                             author='-',
                              msg_type='message',
                              datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
-                             content={'text': '-'})
-                         ))
+                             content={'author': '-', 'text': '-'}))
+                         )
 
     def test_parse_exceptions(self):
         parser = Parser(encoding='utf-8')
         with self.assertRaises(ParseError):
-            parser.encode('-', '-', '-', {'text': '-'})
+            parser.encode('-', '-', {'author': '-', 'text': '-'})
 
     def test_decode_keys(self):
         parser = Parser(encoding='utf-8')
         msg_size = 0
         for size in parser.sector_size.values():
             if isinstance(size, dict):
-                size = size['message']['text']
-            msg_size += int(size)
+                msg_size += int(size['message']['text']) + int(size['message']['author'])
+            else:
+                msg_size += int(size)
         decoded = parser.decode(bytes(msg_size))
 
-        keys = ['author', 'type', 'datetime', 'content']
+        keys = ['type', 'datetime', 'content']
         for key, expected in zip(decoded.keys(), keys):
             self.assertEqual(expected, key)
 
     def test_coding(self):
         parser = Parser('utf-8')
         encoded = parser.encode(
-            author='author',
             msg_type='message',
             datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
-            content={'text': 'test_message'})
+            content={'author': 'author', 'text': 'test_message'})
         decoded = parser.decode(encoded)
 
-        self.assertEqual('author', decoded['author'])
         self.assertEqual('message', decoded['type'])
+        self.assertEqual('author', decoded['content']['author'])
         self.assertEqual('test_message', decoded['content']['text'])
 
     def test_login(self):
         parser = Parser('utf-8')
         encoded = parser.encode(
-            author='author',
             msg_type='login',
             datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y"),
             content={'nick': 'abcd', 'password': '1234'})
         decoded = parser.decode(encoded)
 
-        self.assertEqual('author', decoded['author'])
         self.assertEqual('login', decoded['type'])
         self.assertEqual('abcd', decoded['content']['nick'])
         self.assertEqual('1234', decoded['content']['password'])
@@ -68,13 +64,11 @@ class TestParser(unittest.TestCase):
     def test_disconnect(self):
         parser = Parser('utf-8')
         encoded = parser.encode(
-            author='author',
             msg_type='disconnect',
             datetime=datetime.now().strftime("%H:%M:%S %d-%m-%y")
         )
         decoded = parser.decode(encoded)
 
-        self.assertEqual('author', decoded['author'])
         self.assertEqual('disconnect', decoded['type'])
 
 

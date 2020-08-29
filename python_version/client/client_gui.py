@@ -243,7 +243,7 @@ class ChatWidget(QtW.QWidget):
                 print(read_buff)
                 if read_buff['type'] == 'message':
                     self.msg_signal.emit(
-                        {'author': read_buff['author'],
+                        {'author': read_buff['content']['author'],
                          'message': read_buff['content']['text'],
                          'timestamp': read_buff['datetime']
                          }

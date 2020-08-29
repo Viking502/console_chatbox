@@ -12,15 +12,25 @@ class Client:
 
     @staticmethod
     def print_msg(data: dict):
-        print(f'\033[1;33m{data["author"]} - {data["datetime"]}\n{data["content"]["text"]}\033[0m')
+        print(f'\033[1;33m{data["author"]} - {data["datetime"]}\n{data["text"]}\033[0m')
 
     def read_handler(self):
         while True:
             read_buff = self.core.read()
             if read_buff:
                 self.wait_for_response = False
-                if read_buff['type'] in ['message', 'server_message']:
-                    self.print_msg(read_buff)
+                if read_buff['type'] == 'message':
+                    self.print_msg({
+                        'author': read_buff['content']['author'],
+                        'text': read_buff['content']['text'],
+                        'datetime': read_buff['datetime']
+                        })
+                elif read_buff['type'] == 'server_message':
+                    self.print_msg({
+                        'author': 'server',
+                        'text': read_buff['content']['text'],
+                        'datetime': read_buff['datetime']
+                        })
                 elif read_buff['type'] == 'login_successful':
                     print('\033[1;32mLogged successfully\033[0m')
                 elif read_buff['type'] == 'register_successfully':
