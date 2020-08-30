@@ -58,42 +58,91 @@ class MessagesLayout:
 
     def __init__(self, high, core):
         self.core = core
+        self.active_conversation = '\\all'
 
-        self.layout = QtW.QGridLayout()
+        self.chat_layout = QtW.QGridLayout()
 
-        self.scroll = QtW.QScrollArea()
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.layout.addWidget(self.scroll, 0, 0, 3, -1)
+        self.conversation_with = QtW.QLabel()
 
-        self.wrapper = QtW.QWidget()
-        self.scroll.setWidget(self.wrapper)
+        self.messages_scroll = QtW.QScrollArea()
+        self.messages_scroll.setWidgetResizable(True)
+        self.messages_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+
+        self.messages_wrapper = QtW.QWidget()
+        self.messages_scroll.setWidget(self.messages_wrapper)
 
         self.messages_box = QtW.QVBoxLayout()
         self.messages_box.setAlignment(Qt.AlignTop)
-        self.wrapper.setLayout(self.messages_box)
-
-        self.receiver_box = QtW.QLineEdit()
-        self.receiver_box.setPlaceholderText('receiver')
-        self.receiver_box.setFixedHeight(high // 8)
-        self.layout.addWidget(self.receiver_box, 3, 0)
+        self.messages_wrapper.setLayout(self.messages_box)
 
         self.send_box = QtW.QTextEdit()
         self.send_box.setPlaceholderText('message')
         self.send_box.setFixedHeight(high // 8)
-        self.layout.addWidget(self.send_box, 4, 0)
 
         self.send_button = QtW.QPushButton("send!")
         self.send_button.setStyleSheet("QPushButton:hover { background-color: rgb(200, 200, 200) }")
-        self.layout.addWidget(self.send_button, 4, 1)
         self.send_button.clicked.connect(self.send_msg)
+
+        self.chat_layout.addWidget(self.conversation_with, 0, 0)
+        self.chat_layout.addWidget(self.messages_scroll, 1, 0, 3, -1)
+        self.chat_layout.addWidget(self.send_box, 4, 0)
+        self.chat_layout.addWidget(self.send_button, 4, 1)
+
+
+        # side bar for contacts and settings
+        self.side_bar = QtW.QVBoxLayout()
+        self.side_bar.setAlignment(Qt.AlignTop)
+        # self.side_bar.setStyleSheet("QVBoxLayout { background-color: rgb(200, 200, 200) }")
+
+        self.logout_button = QtW.QPushButton('log_out')
+        self.logout_button.clicked.connect(self.core.disconnect)
+        self.side_bar.addWidget(self.logout_button)
+
+        label = QtW.QLabel('Contacts:')
+        self.side_bar.addWidget(label)
+
+        self.contacts_scroll = QtW.QScrollArea()
+        self.contacts_scroll.setMaximumWidth(260)
+        self.contacts_scroll.setWidgetResizable(True)
+        self.contacts_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.side_bar.addWidget(self.contacts_scroll)
+
+        contacts_wrapper = QtW.QWidget()
+        self.contacts_scroll.setWidget(contacts_wrapper)
+
+        self.contacts = QtW.QVBoxLayout()
+        self.contacts.setAlignment(Qt.AlignTop)
+        contacts_wrapper.setLayout(self.contacts)
+
+        broadcast_button = QtW.QPushButton('broadcast')
+        broadcast_button.clicked.connect(lambda: self.change_conversation('\\all'))
+        self.contacts.addWidget(broadcast_button)
+        # TODO add buttons connected with contacts from local db
+
+        self.add_contact_box = QtW.QLineEdit()
+        self.add_contact_box.setPlaceholderText('username')
+        self.add_contact_box.setMaximumWidth(260)
+        self.side_bar.addWidget(self.add_contact_box)
+
+        self.add_contact_button = QtW.QPushButton('add new contact')
+        self.add_contact_button.clicked.connect(self.add_new_contact)
+        self.side_bar.addWidget(self.add_contact_button)
+
+        # separate messages and side_bar
+        line = QtW.QFrame()
+        line.setFrameShape(QtW.QFrame.VLine)
+
+        self.layout = QtW.QHBoxLayout()
+        self.layout.addLayout(self.chat_layout)
+        self.layout.addWidget(line)
+        self.layout.addLayout(self.side_bar)
 
     def get(self):
         return self.layout
 
     def send_msg(self):
         message = self.send_box.toPlainText()
-        receiver = self.receiver_box.text()
+
         self.send_box.clear()
         if message == '\\exit':
             self.core.disconnect()
@@ -101,10 +150,14 @@ class MessagesLayout:
                 {'author': '', 'message': 'Disconnected', 'timestamp': ''}
             )
         else:
-            if receiver != '':
-                self.core.send_msg(receiver=receiver, message=message)
-            else:
-                self.core.send_msg(message=message)
+            self.core.send_msg(receiver=self.conversation_with.text(), message=message)
+
+    def add_new_contact(self):
+        # TODO ask server for user_id and check if user exists
+        name = self.add_contact_box.text()
+        button = QtW.QPushButton(name)
+        button.clicked.connect(lambda: self.change_conversation(name))
+        self.contacts.addWidget(button)
 
     @Slot()
     def update_messages(self, new_msg: dict):
@@ -112,7 +165,12 @@ class MessagesLayout:
         message.setAlignment(Qt.AlignTop)
         message.setStyleSheet("QLabel { border: 2px solid rgb(200, 200, 200)}")
         self.messages_box.addWidget(message)
-        self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
+        self.messages_scroll.verticalScrollBar().setValue(self.messages_scroll.verticalScrollBar().maximum())
+
+    def change_conversation(self, user_name):
+        self.active_conversation = user_name
+        self.conversation_with.setText(user_name)
+        # TODO load messages connected with this conversation
 
 
 class LoginLayout:
@@ -269,7 +327,8 @@ class ChatWidget(QtW.QWidget):
                     self.server_msg.clear()
 
     def send_disconnect_msg(self) -> int:
-        self.core.disconnect()
+        if self.core.is_logged:
+            self.core.disconnect()
         return 0
 
 
