@@ -42,6 +42,7 @@ class ServerConnectionLayout:
         self.connect_button.clicked.connect(self.open_connection)
         self.layout.addWidget(self.connect_button)
 
+    @Slot()
     def open_connection(self):
         ip = self.addr_box.text()
         try:
@@ -55,14 +56,15 @@ class ServerConnectionLayout:
 
 
 class MessagesLayout:
+    active_conversation = None
 
     def __init__(self, high, core):
         self.core = core
-        self.active_conversation = '\\all'
 
         self.chat_layout = QtW.QGridLayout()
 
         self.conversation_with = QtW.QLabel()
+        self.conversation_with.setFixedHeight(40)
 
         self.messages_scroll = QtW.QScrollArea()
         self.messages_scroll.setWidgetResizable(True)
@@ -95,6 +97,7 @@ class MessagesLayout:
         # self.side_bar.setStyleSheet("QVBoxLayout { background-color: rgb(200, 200, 200) }")
 
         self.logout_button = QtW.QPushButton('log_out')
+        # TODO make redirect to login screen after logout
         self.logout_button.clicked.connect(self.core.disconnect)
         self.side_bar.addWidget(self.logout_button)
 
@@ -114,6 +117,7 @@ class MessagesLayout:
         self.contacts.setAlignment(Qt.AlignTop)
         contacts_wrapper.setLayout(self.contacts)
 
+        self.change_conversation('\\all')
         broadcast_button = QtW.QPushButton('broadcast')
         broadcast_button.clicked.connect(lambda: self.change_conversation('\\all'))
         self.contacts.addWidget(broadcast_button)
@@ -140,6 +144,7 @@ class MessagesLayout:
     def get(self):
         return self.layout
 
+    @Slot()
     def send_msg(self):
         message = self.send_box.toPlainText()
 
@@ -152,6 +157,7 @@ class MessagesLayout:
         else:
             self.core.send_msg(receiver=self.conversation_with.text(), message=message)
 
+    @Slot()
     def add_new_contact(self):
         # TODO ask server for user_id and check if user exists
         name = self.add_contact_box.text()
@@ -222,11 +228,13 @@ class LoginLayout:
 
         self.layout.addRow(self.buttons_layout)
 
+    @Slot()
     def log_in(self):
         nick = self.login_box.text()
         password = self.pass_box.text()
         self.core.log_in(nick=nick, password=password)
 
+    @Slot()
     def register(self):
         nick = self.login_box.text()
         password = self.pass_box.text()
@@ -283,7 +291,7 @@ class ChatWidget(QtW.QWidget):
         self.container.addWidget(self.server_msg)
         self.setLayout(self.container)
 
-    @Slot()
+    @Slot(dict)
     def update_server_msg(self, new_msg: dict):
         self.server_msg.setText(f"{new_msg['timestamp']}: {new_msg['message']}")
 
