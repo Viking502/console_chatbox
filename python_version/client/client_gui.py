@@ -83,13 +83,12 @@ class MessagesLayout:
 
         self.send_button = QtW.QPushButton("send!")
         self.send_button.setStyleSheet("QPushButton:hover { background-color: rgb(200, 200, 200) }")
-        self.send_button.clicked.connect(self.send_msg)
+        self.send_button.clicked.connect(self.send_message)
 
         self.chat_layout.addWidget(self.conversation_with, 0, 0)
         self.chat_layout.addWidget(self.messages_scroll, 1, 0, 3, -1)
         self.chat_layout.addWidget(self.send_box, 4, 0)
         self.chat_layout.addWidget(self.send_button, 4, 1)
-
 
         # side bar for contacts and settings
         self.side_bar = QtW.QVBoxLayout()
@@ -145,17 +144,20 @@ class MessagesLayout:
         return self.layout
 
     @Slot()
-    def send_msg(self):
+    def send_message(self):
         message = self.send_box.toPlainText()
 
         self.send_box.clear()
         if message == '\\exit':
             self.core.disconnect()
             self.update_messages(
-                {'author': '', 'message': 'Disconnected', 'timestamp': ''}
+                {'author': '', 'message': 'Disconnected', 'timestamp': current_timestamp()}
             )
         else:
-            self.core.send_msg(receiver=self.conversation_with.text(), message=message)
+            self.core.send_message(receiver=self.conversation_with.text(), message=message)
+            self.update_messages(
+                {'author': 'You', 'message': message, 'timestamp': current_timestamp()}
+            )
 
     @Slot()
     def add_new_contact(self):
@@ -304,7 +306,7 @@ class ChatWidget(QtW.QWidget):
         except ConnectionRefusedError:
             self.server_msg_signal.emit({
                 'message': f'can\'t connect to server at {ip}:{port}',
-                'timestamp': datetime.now().strftime("%H:%M:%S %d-%m-%y")
+                'timestamp': current_timestamp()
             })
 
         if is_connected:
@@ -338,6 +340,10 @@ class ChatWidget(QtW.QWidget):
         if self.core.is_logged:
             self.core.disconnect()
         return 0
+
+
+def current_timestamp() -> str:
+    return datetime.now().strftime("%H:%M:%S %d-%m-%y")
 
 
 if __name__ == '__main__':

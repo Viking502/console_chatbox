@@ -53,13 +53,9 @@ class Server:
                                    message=decoded_msg['content']['text'],
                                    timestamp=decoded_msg['datetime']
                                    )
-                    if receiver == '\\all':
-                        for host in self.hosts:
+                    for host in self.hosts:
+                        if (receiver == '\\all' and host['nick'] != user_name) or host['nick'] == receiver:
                             host['conn'].send(encoded_msg)
-                    else:
-                        for host in self.hosts:
-                            if host['nick'] == receiver:
-                                host['conn'].send(encoded_msg)
 
                 elif decoded_msg['type'] == 'disconnect':
                     self.remove_host(addr)

@@ -43,7 +43,7 @@ class Client:
                 self.core.disconnect()
                 self.is_running = False
             else:
-                self.core.send_msg(message=send_buff)
+                self.core.send_message(message=send_buff)
 
     def run(self):
 
